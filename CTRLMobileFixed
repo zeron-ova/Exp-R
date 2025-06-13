@@ -1,0 +1,73 @@
+--// Exploit GUI Setup
+local CoreGui       = game:GetService("CoreGui")
+local UserInput     = game:GetService("UserInputService")
+
+-- Parent ScreenGui into CoreGui so exploit can see it
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CtrlSimulatorGUI"
+screenGui.Parent = CoreGui
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Create the circular button
+local btn = Instance.new("TextButton")
+btn.Name               = "CtrlButton"
+btn.Parent             = screenGui
+btn.AnchorPoint        = Vector2.new(0.5, 0.5)
+btn.Position           = UDim2.new(0.5, 0, 0.5, 0)
+btn.Size               = UDim2.new(0, 60, 0, 60)
+btn.BackgroundColor3   = Color3.new(0, 0, 0)
+btn.BorderColor3       = Color3.new(1, 1, 1)
+btn.BorderSizePixel    = 2
+btn.Text               = "CT"
+btn.Font               = Enum.Font.SourceSansBold
+btn.TextSize           = 24
+btn.TextColor3         = Color3.new(1, 1, 1)
+btn.AutoButtonColor    = false
+
+-- Round it into a perfect circle
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(1, 0)
+uiCorner.Parent       = btn
+
+-- Make it draggable by mouse OR touch
+local dragging, dragInput, dragStart, startPos
+
+local function beginDrag(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = btn.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end
+
+btn.InputBegan:Connect(beginDrag)
+
+UserInput.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch) then
+		-- compute delta
+		local delta = input.Position - dragStart
+		btn.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- On tap/click, simulate Left Ctrl
+btn.Activated:Connect(function()
+	if keypress and keyrelease then
+		keypress(0xA2)  -- VK_LCONTROL
+		wait(0.05)
+		keyrelease(0xA2)
+	else
+		warn("keypress/keyrelease not found in this executor.")
+	end
+end)
