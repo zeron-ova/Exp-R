@@ -1,29 +1,43 @@
---// UI Library (simple draggable button)
-local ScreenGui = Instance.new("ScreenGui")
-local Button = Instance.new("TextButton")
+--// Exploit GUI Setup
+local CoreGui       = game:GetService("CoreGui")
+local UserInput     = game:GetService("UserInputService")
 
-ScreenGui.Name = "CtrlSimulatorGUI"
-ScreenGui.Parent = game.CoreGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Parent ScreenGui into CoreGui so exploit can see it
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CtrlSimulatorGUI"
+screenGui.Parent = CoreGui
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-Button.Name = "CtrlButton"
-Button.Parent = ScreenGui
-Button.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-Button.Position = UDim2.new(0, 100, 0, 100)
-Button.Size = UDim2.new(0, 120, 0, 40)
-Button.Font = Enum.Font.SourceSansBold
-Button.Text = "Press Left Ctrl"
-Button.TextColor3 = Color3.new(1, 1, 1)
-Button.TextSize = 18
+-- Create the circular button
+local btn = Instance.new("TextButton")
+btn.Name               = "CtrlButton"
+btn.Parent             = screenGui
+btn.AnchorPoint        = Vector2.new(0.5, 0.5)
+btn.Position           = UDim2.new(0.5, 0, 0.5, 0)
+btn.Size               = UDim2.new(0, 60, 0, 60)
+btn.BackgroundColor3   = Color3.new(0, 0, 0)
+btn.BorderColor3       = Color3.new(1, 1, 1)
+btn.BorderSizePixel    = 2
+btn.Text               = "CT"
+btn.Font               = Enum.Font.SourceSansBold
+btn.TextSize           = 24
+btn.TextColor3         = Color3.new(1, 1, 1)
+btn.AutoButtonColor    = false
 
---// Make button draggable
+-- Round it into a perfect circle
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(1, 0)
+uiCorner.Parent       = btn
+
+-- Make it draggable by mouse OR touch
 local dragging, dragInput, dragStart, startPos
 
-Button.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+local function beginDrag(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
 		dragging = true
 		dragStart = input.Position
-		startPos = Button.Position
+		startPos = btn.Position
 
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then
@@ -31,31 +45,29 @@ Button.InputBegan:Connect(function(input)
 			end
 		end)
 	end
-end)
+end
 
-Button.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		dragInput = input
-	end
-end)
+btn.InputBegan:Connect(beginDrag)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
+UserInput.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch) then
+		-- compute delta
 		local delta = input.Position - dragStart
-		Button.Position = UDim2.new(
+		btn.Position = UDim2.new(
 			startPos.X.Scale, startPos.X.Offset + delta.X,
 			startPos.Y.Scale, startPos.Y.Offset + delta.Y
 		)
 	end
 end)
 
---// Keypress simulation (LEFT CTRL)
-Button.MouseButton1Click:Connect(function()
+-- On tap/click, simulate Left Ctrl
+btn.Activated:Connect(function()
 	if keypress and keyrelease then
-		keypress(0xA2)  -- 0xA2 = Left CTRL virtual key code
-		wait(0.1)
+		keypress(0xA2)  -- VK_LCONTROL
+		wait(0.05)
 		keyrelease(0xA2)
 	else
-		warn("keypress/keyrelease not supported in this environment.")
+		warn("keypress/keyrelease not found in this executor.")
 	end
 end)
